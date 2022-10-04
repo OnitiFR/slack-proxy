@@ -1,4 +1,4 @@
-module github.com/hyosh/oniti-slack-proxy
+module git.oniti.fr/oniti/oniti-slack-proxy
 
 go 1.18
 

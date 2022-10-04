@@ -1,0 +1,3 @@
+Name="Mon Super Client"
+AuthorisationToken="xxxxxxxxxx"
+ChannelsAllowed=["mon-chan","autre-chan"]
