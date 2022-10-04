@@ -5,8 +5,6 @@ Proxy for slack notifications.
 ## Options
 
  - p : port to listen on, default 8080
- - s : directory to load channels from, default channels
- - c : directory to load clients from, default clients
 
 ## Signals
 

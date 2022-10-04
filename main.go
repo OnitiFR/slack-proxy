@@ -4,8 +4,7 @@ import "flag"
 
 func main() {
 	port := flag.Int("p", 8080, "port to listen on")
-	channelsDir := flag.String("s", "channels", "directory to load channels from")
-	clientsDir := flag.String("c", "clients", "directory to load clients from")
+	serverTomlFile := flag.String("c", "", "server config file")
 
 	flag.Parse()
 
@@ -13,25 +12,11 @@ func main() {
 		panic("Port must be specified")
 	}
 
-	if *channelsDir == "" {
-		panic("Channel directory must be specified")
+	if *serverTomlFile == "" {
+		panic("Server config file must be specified")
 	}
 
-	if *clientsDir == "" {
-		panic("Clients directory must be specified")
-	}
-
-	s := NewServer(*port, *channelsDir, *clientsDir)
-
-	err := s.LoadChannels()
-	if err != nil {
-		panic(err)
-	}
-
-	err = s.LoadClients()
-	if err != nil {
-		panic(err)
-	}
+	s := NewServer(*port, *serverTomlFile)
 
 	go listenSignals(s)
 

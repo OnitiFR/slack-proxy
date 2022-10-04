@@ -1,113 +1,134 @@
 package main
 
 import (
+	"crypto/md5"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"strings"
 	"sync"
+
+	"github.com/BurntSushi/toml"
 )
 
 type Server struct {
-	port          int
-	channelsDir   string
-	clientsDir    string
-	clients       map[string]*Client
-	slackChannels map[string]*SlackChannel
-	mutex         *sync.Mutex
+	port           int
+	configFileName string
+	Secret         string
+	Domain         string
+	Clients        map[string]*Client
+	SlackChannels  map[string]*SlackChannel
+	mutex          *sync.Mutex
 }
 
-// load channels from the channels directory
-func (s *Server) LoadChannels() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// reset all channels
-	s.slackChannels = make(map[string]*SlackChannel)
-
-	files, err := ioutil.ReadDir(s.channelsDir)
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		if file.IsDir() || !strings.HasSuffix(file.Name(), ".toml") {
-			continue
-		}
-
-		channel, err := NewSlackChannelFromToml(fmt.Sprintf("%s/%s", s.channelsDir, file.Name()))
-		if err != nil {
-			return err
-		}
-
-		// check if chan already exists
-		if _, ok := s.slackChannels[channel.Name]; ok {
-			return fmt.Errorf("channel %s already exists", channel.Name)
-		}
-
-		s.slackChannels[channel.Name] = channel
-	}
-
-	return nil
-}
-
-// load clients from the clients directory
-func (s *Server) LoadClients() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// reset all clients
-	s.clients = make(map[string]*Client)
-
-	files, err := ioutil.ReadDir(s.clientsDir)
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		if file.IsDir() || !strings.HasSuffix(file.Name(), ".toml") {
-			continue
-		}
-
-		client, err := NewClientFromToml(fmt.Sprintf("%s/%s", s.clientsDir, file.Name()))
-
-		if err != nil {
-			return err
-		}
-
-		// check if client already exists
-		if _, ok := s.clients[client.AuthorisationToken]; ok {
-			return fmt.Errorf("client %s already exists", client.Name)
-		}
-
-		s.clients[client.AuthorisationToken] = client
-	}
-
-	return nil
+type ServerToml struct {
+	Secret        string
+	Domain        string
+	Clients       []*Client
+	SlackChannels []*SlackChannel
 }
 
 // start the server and listen for incoming requests
 func (s *Server) Start() {
 	fmt.Println("Starting server on port", s.port)
 
-	http.HandleFunc("/channels", s.DisplayChannels)
-	http.HandleFunc("/clients", s.DisplayClients)
-	http.HandleFunc("/notify", s.NotifyChannel)
+	http.HandleFunc("/notify/", s.NotifyChannel)
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil)
 	if err != nil {
 		panic(err)
 	}
-
 }
 
-func NewServer(port int, channelsDir string, clientsDir string) *Server {
-	return &Server{
-		port:          port,
-		channelsDir:   channelsDir,
-		clientsDir:    clientsDir,
-		clients:       make(map[string]*Client),
-		slackChannels: make(map[string]*SlackChannel),
-		mutex:         &sync.Mutex{},
+func (s *Server) DisplayClientsRoutes() {
+	for _, client := range s.Clients {
+		fmt.Println(client.Name)
+		for channelName, webhookUrl := range client.Webhooks {
+			fmt.Printf("  - %s : %s\n", channelName, webhookUrl)
+		}
 	}
+}
+
+// load the server config from a toml file
+func (server *Server) LoadConfig() error {
+	var s ServerToml
+	meta, err := toml.DecodeFile(server.configFileName, &s)
+
+	if err != nil {
+		return err
+	}
+	if s.Domain == "" {
+		return fmt.Errorf("domain must be specified")
+	}
+
+	if s.Secret == "" {
+		return fmt.Errorf("secret must be specified")
+	}
+
+	// Check if the slack channels are valid
+	for _, channel := range s.SlackChannels {
+		if channel.Name == "" {
+			return fmt.Errorf("slack channel name must be specified")
+		}
+
+		if channel.WebhookUrl == "" {
+			return fmt.Errorf("slack channel webhook url must be specified")
+		}
+
+		// md5 hash channel name + secret
+		channel.Token = fmt.Sprintf("%x", md5.Sum([]byte(channel.Name+s.Secret)))
+	}
+
+	// Check if the clients are valid
+	for _, client := range s.Clients {
+		if client.Name == "" {
+			return fmt.Errorf("client name must be specified")
+		}
+
+		// md5 hash channel name + secret
+		client.Token = fmt.Sprintf("%x", md5.Sum([]byte(client.Name+s.Secret)))
+
+		client.Webhooks = make(map[string]string)
+		for _, channel := range s.SlackChannels {
+			if client.IsAllowedChannel(channel.Name) {
+				webhookUrl := fmt.Sprintf("%s:%d/notify/%s/%s", s.Domain, server.port, client.Token, channel.Token)
+				client.Webhooks[channel.Name] = webhookUrl
+			}
+		}
+	}
+
+	if len(meta.Undecoded()) > 0 {
+		return fmt.Errorf("unknown fields in config file: %v", meta.Undecoded())
+	}
+
+	server.Secret = s.Secret
+	server.Domain = s.Domain
+	server.Clients = make(map[string]*Client)
+	server.SlackChannels = make(map[string]*SlackChannel)
+
+	for _, client := range s.Clients {
+		server.Clients[client.Token] = client
+	}
+
+	for _, channel := range s.SlackChannels {
+		server.SlackChannels[channel.Token] = channel
+	}
+
+	return nil
+}
+
+func NewServer(port int, serverTomlFile string) *Server {
+	s := &Server{
+		port:           port,
+		configFileName: serverTomlFile,
+		Clients:        make(map[string]*Client),
+		SlackChannels:  make(map[string]*SlackChannel),
+		mutex:          &sync.Mutex{},
+	}
+
+	err := s.LoadConfig()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return s
 }

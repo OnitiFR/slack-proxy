@@ -13,8 +13,12 @@ func listenSignals(server *Server) {
 		signal := <-c
 		switch signal {
 		case syscall.SIGUSR1:
-			server.LoadChannels()
-			server.LoadClients()
+			server.LoadConfig()
+			server.DisplayClientsRoutes()
+
+		case syscall.SIGUSR2:
+			server.DisplayClientsRoutes()
+
 		}
 	}
 }

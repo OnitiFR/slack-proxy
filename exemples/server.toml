@@ -1,0 +1,21 @@
+secret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+domain="http://localhost"
+
+[[clients]]
+	name="Nosee"
+	authorizedChannels=["notifs","notifs-zautres"]
+
+[[clients]]
+name="Eshop"
+
+[[slackChannels]]
+name="notifs"
+webhookUrl="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+[[slackChannels]]
+name="notifs-zautres"
+webhookUrl="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+[[slackChannels]]
+name="francois"
+webhookUrl="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
