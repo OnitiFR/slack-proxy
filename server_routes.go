@@ -69,7 +69,12 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		json.Unmarshal(b, &request)
+		err := json.Unmarshal(b, &request)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Error parsing JSON"))
+			return
+		}
 	}
 
 	// Get client from token
