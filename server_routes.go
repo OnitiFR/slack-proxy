@@ -8,8 +8,27 @@ import (
 	"strings"
 )
 
+type AttachmentField struct {
+	Title string `json:"title"`
+	Value string `json:"value"`
+	Short bool   `json:"short"`
+}
+
+type AttachmentRequest struct {
+	Fallback  string             `json:"fallback"`
+	Text      string             `json:"text"`
+	Color     string             `json:"color"`
+	Mrkdwn_in []string           `json:"mrkdwn_in"`
+	Ts        int64              `json:"ts"`
+	Title     string             `json:"title"`
+	Fields    []*AttachmentField `json:"fields"`
+}
+
 type NotifyRequest struct {
-	Text string
+	Text        string               `json:"text"`
+	Username    string               `json:"username"`
+	Attachments []*AttachmentRequest `json:"attachments"`
+	Icon_emoji  string               `json:"icon_emoji"`
 }
 
 // Main function, sends a message to a channel
@@ -51,7 +70,6 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 		}
 
 		json.Unmarshal(b, &request)
-
 	}
 
 	// Get client from token
@@ -60,13 +78,6 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 	if !okClient {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
-		return
-	}
-
-	// we need a text
-	if request.Text == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("text is required"))
 		return
 	}
 

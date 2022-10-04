@@ -18,16 +18,15 @@ func (c *SlackChannel) SendMessage(request *NotifyRequest, client *Client) error
 
 	prefixMessage := fmt.Sprintf("*%s* :\n", client.Name)
 
-	payload_json := map[string]string{
-		"text": prefixMessage + request.Text,
-	}
+	request.Text = prefixMessage + request.Text
 
-	payload, err := json.Marshal(payload_json)
+	// convert the request to json
+	jsonRequest, err := json.Marshal(request)
+
 	if err != nil {
 		return err
 	}
-
-	res, err := http.Post(c.WebhookUrl, "application/json", bytes.NewBuffer(payload))
+	res, err := http.Post(c.WebhookUrl, "application/json", bytes.NewBuffer(jsonRequest))
 	if res != nil {
 		defer res.Body.Close()
 	}
