@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,7 +14,12 @@ func listenSignals(server *Server) {
 		signal := <-c
 		switch signal {
 		case syscall.SIGUSR1:
-			server.LoadConfig()
+			err := server.LoadConfig()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			fmt.Println("Config reloaded")
 			server.DisplayClientsRoutes()
 
 		case syscall.SIGUSR2:

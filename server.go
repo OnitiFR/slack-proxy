@@ -38,6 +38,7 @@ func (s *Server) Start() {
 	}
 }
 
+// display all the clients and their webhooks
 func (s *Server) DisplayClientsRoutes() {
 	for _, client := range s.Clients {
 		fmt.Println(client.Name)
@@ -45,6 +46,12 @@ func (s *Server) DisplayClientsRoutes() {
 			fmt.Printf("  - %s : %s\n", channelName, webhookUrl)
 		}
 	}
+}
+
+// return message with status code
+func (s *Server) Reponse(w http.ResponseWriter, status int, message string) {
+	w.WriteHeader(status)
+	w.Write([]byte(message))
 }
 
 // load the server config from a toml file

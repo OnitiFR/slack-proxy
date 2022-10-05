@@ -39,7 +39,7 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 
 	// Only accept POST
 	if r.Method != "POST" {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		s.Reponse(w, http.StatusMethodNotAllowed, "Only POST method is allowed")
 		return
 	}
 
@@ -47,8 +47,7 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 	routeParts := strings.Split(routePath, "/")
 
 	if len(routeParts) != 2 {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Invalid route"))
+		s.Reponse(w, http.StatusBadRequest, "Invalid route")
 		return
 	}
 	clientToken := routeParts[0]
@@ -64,15 +63,13 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 		// Try to parse the request as JSON
 		b, errParse := ioutil.ReadAll(r.Body)
 		if errParse != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Invalid request"))
+			s.Reponse(w, http.StatusBadRequest, "Invalid request")
 			return
 		}
 
 		err := json.Unmarshal(b, &request)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Error parsing JSON"))
+			s.Reponse(w, http.StatusBadRequest, "Error parsing JSON")
 			return
 		}
 	}
@@ -81,36 +78,31 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 	client, okClient := s.Clients[clientToken]
 
 	if !okClient {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
+		s.Reponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// check if channel exists
 	channel, ok := s.SlackChannels[channelName]
 	if !ok {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("channel not found"))
+		s.Reponse(w, http.StatusNotFound, "Channel not found")
 		return
 	}
 
 	// check if client is allowed to send a message to this channel
 	chanAllowed := client.IsAllowedChannel(channel.Name)
 	if !chanAllowed {
-		w.WriteHeader(http.StatusUnauthorized)
 		message := fmt.Sprintf("channel %s not allowed for client %s", channelName, client.Name)
-		w.Write([]byte(message))
+		s.Reponse(w, http.StatusUnauthorized, message)
 		return
 	}
 
 	// send message
 	err := channel.SendMessage(&request, client)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		s.Reponse(w, http.StatusInternalServerError, "Error sending message : "+err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("message sent"))
+	s.Reponse(w, http.StatusOK, "Message sent")
 }
