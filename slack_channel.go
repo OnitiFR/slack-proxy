@@ -16,7 +16,13 @@ type SlackChannel struct {
 // send a message to the slack channel
 func (c *SlackChannel) SendMessage(request *NotifyRequest, client *Client) error {
 
-	prefixMessage := fmt.Sprintf("*%s* :\n", client.Name)
+	prefixSuffix := " "
+
+	if len(request.Attachments) > 0 {
+		prefixSuffix = "\n"
+	}
+
+	prefixMessage := fmt.Sprintf("*%s* :%s", client.Name, prefixSuffix)
 
 	if client.Name == "self" {
 		prefixMessage = ""
