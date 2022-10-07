@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -14,9 +17,13 @@ type Server struct {
 	configFileName string
 	Secret         string
 	Domain         string
+	selfClient     *Client
 	Clients        map[string]*Client
 	SlackChannels  map[string]*SlackChannel
 	mutex          *sync.Mutex
+	nbmessages     int
+	nberrors       int
+	lastSelfNotify time.Time
 }
 
 type ServerToml struct {
@@ -100,6 +107,7 @@ func (server *Server) LoadConfig() error {
 				client.Webhooks[channel.Name] = webhookUrl
 			}
 		}
+
 	}
 
 	if len(meta.Undecoded()) > 0 {
@@ -112,7 +120,11 @@ func (server *Server) LoadConfig() error {
 	server.SlackChannels = make(map[string]*SlackChannel)
 
 	for _, client := range s.Clients {
+		if client.Name == "self" {
+			server.selfClient = client
+		}
 		server.Clients[client.Token] = client
+
 	}
 
 	for _, channel := range s.SlackChannels {
@@ -122,6 +134,37 @@ func (server *Server) LoadConfig() error {
 	return nil
 }
 
+// Notify self to inform the server is still running
+func (s *Server) SelfNotify() {
+	payload := map[string]string{
+		"text": fmt.Sprintf("Oniti Proxy is still running. %d message(s) sent :tada:, %d error(s) :doh: since %s", s.nbmessages, s.nberrors, time.Duration(time.Since(s.lastSelfNotify))),
+	}
+	jsonRequest, err := json.Marshal(payload)
+
+	if err != nil {
+		fmt.Println("Error while marshalling json request", err)
+		return
+	}
+	_, err = http.Post(s.selfClient.Webhooks["notifs"], "application/json", bytes.NewBuffer(jsonRequest))
+
+	if err != nil {
+		fmt.Println("Error creating request", err)
+		return
+	}
+
+	s.lastSelfNotify = time.Now()
+	s.nberrors = 0
+	s.nbmessages = 0
+}
+
+// check if the server is still running
+func (s *Server) SelfCheck() {
+	for {
+		time.Sleep(24 * time.Hour) // check every 24 hours
+		s.SelfNotify()
+	}
+}
+
 func NewServer(port int, serverTomlFile string) *Server {
 	s := &Server{
 		port:           port,
@@ -129,6 +172,9 @@ func NewServer(port int, serverTomlFile string) *Server {
 		Clients:        make(map[string]*Client),
 		SlackChannels:  make(map[string]*SlackChannel),
 		mutex:          &sync.Mutex{},
+		nbmessages:     0,
+		nberrors:       0,
+		lastSelfNotify: time.Now(),
 	}
 
 	err := s.LoadConfig()
@@ -136,6 +182,8 @@ func NewServer(port int, serverTomlFile string) *Server {
 	if err != nil {
 		panic(err)
 	}
+
+	go s.SelfCheck()
 
 	return s
 }

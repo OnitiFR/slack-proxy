@@ -2,8 +2,8 @@ secret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 domain="http://localhost"
 
 [[clients]]
-	name="Nosee"
-	authorizedChannels=["notifs","notifs-zautres"]
+name="Nosee"
+authorizedChannels=["notifs","notifs-zautres"]
 
 [[clients]]
 name="Eshop"

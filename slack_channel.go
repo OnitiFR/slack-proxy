@@ -18,6 +18,10 @@ func (c *SlackChannel) SendMessage(request *NotifyRequest, client *Client) error
 
 	prefixMessage := fmt.Sprintf("*%s* :\n", client.Name)
 
+	if client.Name == "self" {
+		prefixMessage = ""
+	}
+
 	request.Text = prefixMessage + request.Text
 
 	// convert the request to json
