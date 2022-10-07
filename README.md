@@ -11,9 +11,3 @@ Proxy for slack notifications.
 
  - USR1 : redifine configuration
  - USR2 : display all clients hooks
-
- ## Usage
-Send a post to ```/notify```
-
-fields :
- - text: message to send
