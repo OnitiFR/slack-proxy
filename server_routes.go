@@ -43,15 +43,14 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	routePath := r.URL.Path[len("/notify/"):]
-	routeParts := strings.Split(routePath, "/")
+	routeParts := strings.Split(r.URL.Path, "/")
 
-	if len(routeParts) != 2 {
+	if len(routeParts) != 4 {
 		s.Reponse(w, http.StatusBadRequest, "Invalid route")
 		return
 	}
-	clientToken := routeParts[0]
-	channelName := routeParts[1]
+	clientToken := routeParts[2]
+	channelName := routeParts[3]
 
 	var request NotifyRequest
 

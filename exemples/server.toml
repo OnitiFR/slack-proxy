@@ -1,5 +1,5 @@
 secret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-domain="http://localhost"
+baseurl="http://localhost"
 
 [[clients]]
 name="Nosee"

@@ -16,7 +16,7 @@ type Server struct {
 	port           int
 	configFileName string
 	Secret         string
-	Domain         string
+	BaseUrl        string
 	selfClient     *Client
 	Clients        map[string]*Client
 	SlackChannels  map[string]*SlackChannel
@@ -28,7 +28,7 @@ type Server struct {
 
 type ServerToml struct {
 	Secret        string
-	Domain        string
+	BaseUrl       string
 	Clients       []*Client
 	SlackChannels []*SlackChannel
 }
@@ -69,8 +69,8 @@ func (server *Server) LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	if s.Domain == "" {
-		return fmt.Errorf("domain must be specified")
+	if s.BaseUrl == "" {
+		return fmt.Errorf("base url must be specified")
 	}
 
 	if s.Secret == "" {
@@ -103,7 +103,7 @@ func (server *Server) LoadConfig() error {
 		client.Webhooks = make(map[string]string)
 		for _, channel := range s.SlackChannels {
 			if client.IsAllowedChannel(channel.Name) {
-				webhookUrl := fmt.Sprintf("%s:%d/notify/%s/%s", s.Domain, server.port, client.Token, channel.Token)
+				webhookUrl := fmt.Sprintf("%s/notify/%s/%s", s.BaseUrl, client.Token, channel.Token)
 				client.Webhooks[channel.Name] = webhookUrl
 			}
 		}
@@ -115,7 +115,7 @@ func (server *Server) LoadConfig() error {
 	}
 
 	server.Secret = s.Secret
-	server.Domain = s.Domain
+	server.BaseUrl = s.BaseUrl
 	server.Clients = make(map[string]*Client)
 	server.SlackChannels = make(map[string]*SlackChannel)
 
@@ -139,6 +139,7 @@ func (s *Server) SelfNotify() {
 	payload := map[string]string{
 		"text": fmt.Sprintf("Oniti Proxy is still running. %d message(s) sent :tada:, %d error(s) :doh: since %s", s.nbmessages, s.nberrors, time.Duration(time.Since(s.lastSelfNotify))),
 	}
+
 	jsonRequest, err := json.Marshal(payload)
 
 	if err != nil {
