@@ -1,5 +1,8 @@
 secret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 baseurl="http://localhost"
+notifyroute="notify"
+selfnotifychannel="xxxx"
+selfcheckeveryxhours=24
 
 [[clients]]
 name="Nosee"
