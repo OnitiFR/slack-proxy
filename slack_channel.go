@@ -22,7 +22,12 @@ func (c *SlackChannel) SendMessage(request *NotifyRequest, client *Client) error
 		prefixSuffix = "\n"
 	}
 
-	prefixMessage := fmt.Sprintf("%s *%s* :%s", client.Icon, client.Name, prefixSuffix)
+	spaceChar := " "
+	if client.Icon == "" {
+		spaceChar = ""
+	}
+
+	prefixMessage := fmt.Sprintf("%s%s*%s* :%s", client.Icon, spaceChar, client.Name, prefixSuffix)
 
 	if client.Name == "self" {
 		prefixMessage = ""
