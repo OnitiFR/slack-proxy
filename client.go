@@ -2,6 +2,7 @@ package main
 
 type Client struct {
 	Name               string
+	Icon               string
 	AuthorizedChannels []string
 	Token              string
 	Webhooks           map[string]string

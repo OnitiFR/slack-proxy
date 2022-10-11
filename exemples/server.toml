@@ -7,9 +7,11 @@ selfcheckeveryxhours=24
 [[clients]]
 name="Nosee"
 authorizedChannels=["notifs","notifs-zautres"]
+icon=":xxxx:"
 
 [[clients]]
 name="Eshop"
+icon=":xxxx:"
 
 [[slackChannels]]
 name="notifs"
