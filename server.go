@@ -31,12 +31,12 @@ type Server struct {
 
 type ServerToml struct {
 	Secret               string
-	BaseUrl              string
-	NotifyRoute          string
-	SelfNotifyChannel    string
-	SelfCheckEveryXHours int
+	BaseUrl              string `toml:"base_url"`
+	NotifyRoute          string `toml:"notify_route"`
+	SelfNotifyChannel    string `toml:"self_notify_channel"`
+	SelfCheckEveryXHours int    `toml:"self_check_every_x_hours"`
 	Clients              []*Client
-	SlackChannels        []*SlackChannel
+	SlackChannels        []*SlackChannel `toml:"slack_channels"`
 }
 
 // start the server and listen for incoming requests

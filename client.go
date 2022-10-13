@@ -3,7 +3,7 @@ package main
 type Client struct {
 	Name               string
 	Icon               string
-	AuthorizedChannels []string
+	AuthorizedChannels []string `toml:"authorized_channels"`
 	Token              string
 	Webhooks           map[string]string
 }

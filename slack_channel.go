@@ -9,7 +9,7 @@ import (
 
 type SlackChannel struct {
 	Name       string
-	WebhookUrl string
+	WebhookUrl string `toml:"webhook_url"`
 	Token      string
 }
 
