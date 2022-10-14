@@ -59,18 +59,43 @@ func (s *Server) NotifyChannel(w http.ResponseWriter, r *http.Request) {
 	if text != "" {
 		request.Text = text
 	} else {
-		// Try to parse the request as JSON
-		b, errParse := ioutil.ReadAll(r.Body)
-		if errParse != nil {
-			s.Reponse(w, http.StatusBadRequest, "Invalid request")
+		contentType := r.Header.Get("Content-type")
+		jsonString := ""
+
+		if contentType == "application/x-www-form-urlencoded" {
+			err := r.ParseForm()
+			if err != nil {
+				s.Reponse(w, http.StatusBadRequest, "Invalid request : "+err.Error())
+				return
+			}
+
+			for _, value := range r.PostForm {
+				jsonString = value[0]
+				break
+			}
+
+		} else {
+			// Try to parse the request as JSON
+			b, errParse := ioutil.ReadAll(r.Body)
+			if errParse != nil {
+				s.Reponse(w, http.StatusBadRequest, "Invalid request : "+errParse.Error())
+				return
+			}
+			jsonString = string(b)
+
+		}
+
+		if jsonString == "" {
+			s.Reponse(w, http.StatusBadRequest, "Empty request")
 			return
 		}
 
-		err := json.Unmarshal(b, &request)
+		err := json.Unmarshal([]byte(jsonString), &request)
 		if err != nil {
-			s.Reponse(w, http.StatusBadRequest, "Error parsing JSON")
+			s.Reponse(w, http.StatusBadRequest, "Error parsing JSON : "+err.Error())
 			return
 		}
+
 	}
 
 	// Get client from token
